@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
  * CLI tool for transforming markdown files to html from a src folder to dest
- * usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [TODO:rules-file-or-json]
+ * usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [rules-file-or-json]
  *
  * Note: After `npm install` the path to ./node_modules/bin/ can be used
  *
  */
 
+var path = require('path');
 var GitWikiToHTML = require('../');
 const Console = require('console').Console;
 
@@ -18,16 +19,26 @@ if (process.argv.length < 3 || process.argv[2] == '--help') {
     process.exit(0);
 }
 
-// TODO review rules and passing them to the GitWikiToHTML
+var rulesTplFile = '../data/tpl/ibm-northstar.json';
+
+if (process.argv[4] && process.argv[4].match(/\.json$/)) {
+    rulesTplFile = path.isAbsolute(process.argv[4]) ? process.argv[4] : path.join(process.cwd(), process.argv[4]);
+}
+
+myConsole.log('Using rules from: %s', rulesTplFile);
+
+var rules = {};
+try {
+    rules = require(rulesTplFile);
+} catch (err) {
+    myConsole.log('Failed to load rules from JSON file: ', err);
+    process.exit(1);
+}
+
 var obj = new GitWikiToHTML({
     'srcDir': process.argv[2] || null,
     'destDir': process.argv[3] || null,
-    'rules': {
-        'pre': [
-            {'/<h([1-3])/': '<h$1 class="ibm-h$1" '}
-        ],
-        'post': []
-    }
+    'rules': rules
 });
 
 obj.transform().then(function() {

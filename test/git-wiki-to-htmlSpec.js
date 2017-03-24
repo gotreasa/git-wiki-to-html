@@ -253,4 +253,56 @@ describe('Testsuite - CloudantStore', function() {
             done();
         }).catch((err)=> { done(err); });
     });
+
+    it('Testcase - applyRules - empty rules - same content', function() {
+        var parser = new GitWikiToHTML();
+        var content = `# Some content h1
+            Another line here
+        `;
+        var resp = parser.applyRules(
+            content,
+            null);
+        expect(resp).to.equal(content);
+    });
+
+    it('Testcase - applyRules - a list of markdown rules', function() {
+        var parser = new GitWikiToHTML();
+        var content = `# Some content h1 ((link))
+            Another line here
+        `;
+        var expectedRes = `# Something content h1 (%28link%29)
+            Another line here
+        `;
+        var resp = parser.applyRules(
+            content,
+            [
+                {'Some ': 'Something '},
+                 {'\\((.*)\\((.*)\\)(.*)\\)': '($1%28$2%29$3)'}
+            ]);
+        expect(resp).to.equal(expectedRes);
+    });
+
+    it('Testcase - applyRules - empty rules - a list of html rules', function() {
+        var parser = new GitWikiToHTML();
+        var content = `<h1 id="soemthing">Text</h1>
+        <h2>Text H2</h2>
+        <table><tr><td>content here</td></tr></table>
+        <table id="tbl-id"><tr><td>content here</td></tr></table>
+        <img src="/path/to/img" />
+        `;
+        var expectedRes = `<h1 class='ibm-h1' id="soemthing">Text</h1>
+        <h2 class='ibm-h2'>Text H2</h2>
+        <table class="ibm-data-table ibm-altcols ibm-grid"><tr><td>content here</td></tr></table>
+        <table class="ibm-data-table ibm-altcols ibm-grid" id="tbl-id"><tr><td>content here</td></tr></table>
+        <img class="ibm-resize" src="/path/to/img" />
+        `;
+        var resp = parser.applyRules(
+            content,
+            [
+                {'<h([1-3])': '<h$1 class=\'ibm-h$1\''},
+                {'<table([\\s]?)': '<table class="ibm-data-table ibm-altcols ibm-grid"$1'},
+                {'<img ': '<img class="ibm-resize" '}
+            ]);
+        expect(resp).to.equal(expectedRes);
+    });
 });
