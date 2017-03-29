@@ -7,7 +7,8 @@ var expect = require('chai').expect,
 
 describe('Testsuite - CloudantStore', function() {
     var fsMock = {
-        statSync: function() {}
+        statSync: function() {},
+        writeFileSync: function() {}
     };
 
     var fspMock = {
@@ -16,21 +17,61 @@ describe('Testsuite - CloudantStore', function() {
         readFile: function() {}
     };
 
-    var statSyncStub, readdirStub, writeFileStub, readFileStub;
+    var statSyncStub, readdirStub, writeFileStub, readFileStub, writeFileSyncStub;
 
     var dirContent = [
         '.git',
         'Home.md',
         'en:Help.md',
-        'en:Help:Landing.md',
-        'fr:Help.md',
+        'en:Help:Landing-Some-Page.md',
+        'fr_ca:Help.md',
         'test.txt'
     ];
 
     var dirFilteredContent = [
         'en:Help.md',
-        'en:Help:Landing.md',
-        'fr:Help.md'
+        'en:Help:Landing-Some-Page.md',
+        'fr_ca:Help.md'
+    ];
+
+    var menuBuilt = {
+        'en': {
+            'Help': {
+                'Categ-page': {
+                    'Item-page-1': {
+                        '_link': 'en:Help:Categ-page:Item-page-1'
+                    },
+                    'Item-page-2': {
+                        '_link': 'en:Help:Categ-page:Item-page-2'
+                    }
+                },
+                'Landing-Some-Page': {
+                    '_link': 'en:Help:Landing-Some-Page'
+                },
+                '_link': 'en:Help'
+            }
+        },
+        'fr_ca': {
+            'Help': {
+                'Categ-1': {
+                    'Categ-2': {
+                        'Page': {
+                            '_link': 'fr_ca:Help:Categ-1:Categ-2:Page'
+                        }
+                    }
+                },
+                '_link': 'fr_ca:Help'
+            }
+        }
+    };
+
+    var menuSrcFiles = [
+        'en:Help.md',
+        'en:Help:Landing-Some-Page.md',
+        'en:Help:Categ-page:Item-page-1.md',
+        'en:Help:Categ-page:Item-page-2.md',
+        'fr_ca:Help.md',
+        'fr_ca:Help:Categ-1:Categ-2:Page.md'
     ];
 
     before(function() {
@@ -43,6 +84,7 @@ describe('Testsuite - CloudantStore', function() {
         statSyncStub = sinon.stub(fsMock, 'statSync');
         readdirStub = sinon.stub(fspMock, 'readdir');
         writeFileStub = sinon.stub(fspMock, 'writeFile');
+        writeFileSyncStub = sinon.stub(fsMock, 'writeFileSync');
     });
 
     afterEach(function() {
@@ -50,6 +92,7 @@ describe('Testsuite - CloudantStore', function() {
         statSyncStub.restore();
         readdirStub.restore();
         writeFileStub.restore();
+        writeFileSyncStub.restore();
     });
 
     it('Testcase - Constructor - default params', function() {
@@ -182,14 +225,16 @@ describe('Testsuite - CloudantStore', function() {
 
     it('Testcase - transform', function(done) {
         var parser = new GitWikiToHTML();
-        parser.srcFiles = ['en:Help.md', 'en:Help:Landing.md'];
+        parser.srcFiles = ['en:Help.md', 'en:Help:Landing.md', 'fr_ca:Help.md', 'fr_ca:Help:Landing.md'];
         sinon.stub(parser, 'validConfiguration').returns(true);
         readFileStub.returns(Promise.resolve('# content'));
         writeFileStub.returns(Promise.resolve());
+        writeFileSyncStub.returns(true);
 
         parser.transform()
         .then(() => {
-            expect(readFileStub).calledTwice;
+            expect(readFileStub.callCount).to.equal(4);
+            expect(writeFileSyncStub.callCount).to.equal(2);
             expect(parser.resFiles[0]).to.equal('en:Help.html');
             expect(parser.resFiles[1]).to.equal('en:Help:Landing.html');
             done();
@@ -304,5 +349,46 @@ describe('Testsuite - CloudantStore', function() {
                 {'<img ': '<img class="ibm-resize" '}
             ]);
         expect(resp).to.equal(expectedRes);
+    });
+
+    it('Testcase - buildMenuTree', function() {
+        var parser = new GitWikiToHTML();
+        var result = parser.buildMenuTree(menuSrcFiles);
+        expect(result).to.deep.equal(menuBuilt);
+    });
+
+    it('Testcase - getMenuTpl - item', function() {
+        var parser = new GitWikiToHTML();
+        parser.menu = menuBuilt;
+        var result = parser.getMenuTpl('Item-page-1', 'en:Help:Categ-page:Item-page-1', null, null, 'item');
+        expect(result).to.deep.equal('<li id="Help:Categ-page:Item-page-1"><a role="treeitem" href="/help/#Help:' +
+        'Categ-page:Item-page-1" translate>Item page 1</a></li>\n');
+    });
+
+    it('Testcase - getMenuTpl - categ', function() {
+        var parser = new GitWikiToHTML();
+        parser.menu = menuBuilt;
+        var result = parser.getMenuTpl('Categ-Page', null, '_SITEMS_', 2, 'categ');
+        expect(result).to.deep.equal('<li><span class="ibm-subnav-heading" translate>Categ Page</span>\n' +
+        '<ul class="ibm-level-2" role="tree">\n_SITEMS_\n</ul>\n</li>\n');
+    });
+
+    it('Testcase - getMenuTpl - categ level', function() {
+        var parser = new GitWikiToHTML();
+        parser.menu = menuBuilt;
+        var result = parser.getMenuTpl('Categ-Page', null, '_SITEMS_', 1, 'categ');
+        expect(result).to.deep.equal('<ul id="ibm-primary-links" role="tree" class="ibm-level-1">\n_SITEMS_\n</ul>\n');
+    });
+
+    it('Testcase - getMenu', function() {
+        var parser = new GitWikiToHTML();
+        parser.menu = menuBuilt;
+        var result = parser.getMenu(menuBuilt['fr_ca']['Help']);
+        expect(result).to.deep.equal('<ul id="ibm-primary-links" role="tree" class="ibm-level-1">\n' +
+        '<li><span class="ibm-subnav-heading" translate>Categ 1</span>\n<ul class="ibm-level-2" ' +
+        'role="tree">\n<li><span class="ibm-subnav-heading" translate>Categ 2</span>\n<ul class="' +
+        'ibm-level-3" role="tree">\n<li id="fr_ca:Help:Categ-1:Categ-2:Page"><a role="treeitem" ' +
+        'href="/help/#fr_ca:Help:Categ-1:Categ-2:Page" translate>Page</a></li>\n\n</ul>\n</li>\n\n' +
+        '</ul>\n</li>\n\n</ul>\n');
     });
 });
