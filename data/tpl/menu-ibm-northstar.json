@@ -1,0 +1,5 @@
+{
+    "item": "<li id=\"{{link}}\"><a role=\"treeitem\" href=\"/help/#{{link}}\" alt=\"{{title}}\" translate>{{title}}</a></li>\n",
+    "category": "<li><span class=\"ibm-subnav-heading\" translate>{{title}}</span>\n<ul class=\"ibm-level-{{level}}\" role=\"tree\">\n{{{subitems}}}</ul>\n</li>\n",
+    "category-1": "<ul id=\"ibm-primary-links\" role=\"tree\" class=\"ibm-level-{{level}}\">\n{{{subitems}}}</ul>\n"
+}
