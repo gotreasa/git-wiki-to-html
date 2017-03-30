@@ -17,7 +17,8 @@
   "dependencies": {
     "debug": "^2.6.3",
     "fs-promise": "^2.0.0",
-    "marked": "^0.3.6"
+    "marked": "^0.3.6",
+    "mustache": "^2.3.0"
   },
   "pre-commit": [
     "lint",

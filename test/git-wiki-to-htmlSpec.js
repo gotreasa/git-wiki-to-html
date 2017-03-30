@@ -361,34 +361,28 @@ describe('Testsuite - CloudantStore', function() {
         var parser = new GitWikiToHTML();
         parser.menu = menuBuilt;
         var result = parser.getMenuTpl('Item-page-1', 'en:Help:Categ-page:Item-page-1', null, null, 'item');
-        expect(result).to.deep.equal('<li id="Help:Categ-page:Item-page-1"><a role="treeitem" href="/help/#Help:' +
-        'Categ-page:Item-page-1" translate>Item page 1</a></li>\n');
+        expect(result).to.deep.equal('<li><a href="Help:Categ-page:Item-page-1">Item page 1</a></li>');
     });
 
     it('Testcase - getMenuTpl - categ', function() {
         var parser = new GitWikiToHTML();
         parser.menu = menuBuilt;
-        var result = parser.getMenuTpl('Categ-Page', null, '_SITEMS_', 2, 'categ');
-        expect(result).to.deep.equal('<li><span class="ibm-subnav-heading" translate>Categ Page</span>\n' +
-        '<ul class="ibm-level-2" role="tree">\n_SITEMS_\n</ul>\n</li>\n');
+        var result = parser.getMenuTpl('Categ-Page', null, '_SUBITEMS_', 2, 'category');
+        expect(result).to.deep.equal('<li><span>Categ Page</span><ul>_SUBITEMS_</ul></li>');
     });
 
     it('Testcase - getMenuTpl - categ level', function() {
         var parser = new GitWikiToHTML();
         parser.menu = menuBuilt;
-        var result = parser.getMenuTpl('Categ-Page', null, '_SITEMS_', 1, 'categ');
-        expect(result).to.deep.equal('<ul id="ibm-primary-links" role="tree" class="ibm-level-1">\n_SITEMS_\n</ul>\n');
+        var result = parser.getMenuTpl('Categ-Page', null, '_SUBITEMS_', 1, 'category');
+        expect(result).to.deep.equal('<ul>_SUBITEMS_</ul>');
     });
 
     it('Testcase - getMenu', function() {
         var parser = new GitWikiToHTML();
         parser.menu = menuBuilt;
         var result = parser.getMenu(menuBuilt['fr_ca']['Help']);
-        expect(result).to.deep.equal('<ul id="ibm-primary-links" role="tree" class="ibm-level-1">\n' +
-        '<li><span class="ibm-subnav-heading" translate>Categ 1</span>\n<ul class="ibm-level-2" ' +
-        'role="tree">\n<li><span class="ibm-subnav-heading" translate>Categ 2</span>\n<ul class="' +
-        'ibm-level-3" role="tree">\n<li id="fr_ca:Help:Categ-1:Categ-2:Page"><a role="treeitem" ' +
-        'href="/help/#fr_ca:Help:Categ-1:Categ-2:Page" translate>Page</a></li>\n\n</ul>\n</li>\n\n' +
-        '</ul>\n</li>\n\n</ul>\n');
+        expect(result).to.deep.equal('<ul><li><span>Categ 1</span><ul><li><span>Categ 2</span>' +
+        '<ul><li><a href="fr_ca:Help:Categ-1:Categ-2:Page">Page</a></li></ul></li></ul></li></ul>');
     });
 });
