@@ -52,10 +52,6 @@ try {
     process.exit(1);
 }
 
-if (process.argv[5] && process.argv[5].match(/\.json$/)) {
-    menuTplFile = path.isAbsolute(process.argv[5]) ? process.argv[5] : path.join(process.cwd(), process.argv[5]);
-}
-
 var obj = new GitWikiToHTML({
     'srcDir': process.argv[2] || null,
     'destDir': process.argv[3] || null,
