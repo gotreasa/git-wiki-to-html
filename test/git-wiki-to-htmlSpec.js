@@ -53,10 +53,10 @@ describe('Testsuite - CloudantStore', function() {
         },
         'fr_ca': {
             'Help': {
-                'Categ-1': {
-                    'Categ-2': {
+                'Categ-page': {
+                    'Item-page-1': {
                         'Page': {
-                            '_link': 'fr_ca:Help:Categ-1:Categ-2:Page'
+                            '_link': 'fr_ca:Help:Categ-page:Item-page-2'
                         }
                     }
                 },
@@ -354,7 +354,28 @@ describe('Testsuite - CloudantStore', function() {
     it('Testcase - buildMenuTree', function() {
         var parser = new GitWikiToHTML();
         var result = parser.buildMenuTree(menuSrcFiles);
-        expect(result).to.deep.equal(menuBuilt);
+
+        expect(result.get('en').get('Help').get('Landing-Some-Page').get('_link'))
+            .to.equal('en:Help:Landing-Some-Page');
+        expect(result.get('en').get('Help').get('Categ-page').get('Item-page-1').get('_link'))
+            .to.equal('en:Help:Categ-page:Item-page-1');
+    });
+
+    it('Testcase - buildMenuTree - ordered', function() {
+        var parser = new GitWikiToHTML({
+            rules: {
+                order: [
+                    'Help:Categ-page:Item-page-2.md'
+                ]
+            }
+        });
+        var result = parser.buildMenuTree(menuSrcFiles);
+        var lev1EnMapKeys = (result.get('en').get('Help')).keys();
+        expect(lev1EnMapKeys.next().value).to.equal('Categ-page');
+        expect(lev1EnMapKeys.next().value).to.equal('Landing-Some-Page');
+        var lev2EnMapKeys = (result.get('en').get('Help').get('Categ-page')).keys();
+        expect(lev2EnMapKeys.next().value).to.equal('Item-page-2');
+        expect(lev2EnMapKeys.next().value).to.equal('Item-page-1');
     });
 
     it('Testcase - getMenuTpl - item', function() {
@@ -366,23 +387,66 @@ describe('Testsuite - CloudantStore', function() {
 
     it('Testcase - getMenuTpl - categ', function() {
         var parser = new GitWikiToHTML();
-        parser.menu = menuBuilt;
         var result = parser.getMenuTpl('Categ-Page', null, '_SUBITEMS_', 2, 'category');
         expect(result).to.deep.equal('<li><span>Categ Page</span><ul>_SUBITEMS_</ul></li>');
     });
 
     it('Testcase - getMenuTpl - categ level', function() {
         var parser = new GitWikiToHTML();
-        parser.menu = menuBuilt;
         var result = parser.getMenuTpl('Categ-Page', null, '_SUBITEMS_', 1, 'category');
         expect(result).to.deep.equal('<ul>_SUBITEMS_</ul>');
     });
 
     it('Testcase - getMenu', function() {
         var parser = new GitWikiToHTML();
-        parser.menu = menuBuilt;
-        var result = parser.getMenu(menuBuilt['fr_ca']['Help']);
-        expect(result).to.deep.equal('<ul><li><span>Categ 1</span><ul><li><span>Categ 2</span>' +
+        var menuMap = parser.buildMenuTree(menuSrcFiles);
+        var resultFr = parser.getMenu(menuMap.get('fr_ca').get('Help'));
+        expect(resultFr).to.deep.equal('<ul><li><span>Categ 1</span><ul><li><span>Categ 2</span>' +
         '<ul><li><a href="fr_ca:Help:Categ-1:Categ-2:Page">Page</a></li></ul></li></ul></li></ul>');
+        var resultEn = parser.getMenu(menuMap.get('en').get('Help'));
+        expect(resultEn).to.deep.equal('<ul><li><a href="Help:Landing-Some-Page">Landing Some Page</a>' +
+        '</li><li><span>Categ page</span><ul><li><a href="Help:Categ-page:Item-page-2">Item page 2</a>' +
+        '</li><li><a href="Help:Categ-page:Item-page-1">Item page 1</a></li></ul></li></ul>');
+    });
+
+    it('Testcase - getMenu ordered', function() {
+        var parser = new GitWikiToHTML({
+            rules: {
+                order: [
+                    'Help:Categ-page:Item-page-2.md'
+                ]
+            }
+        });
+        var menuMap = parser.buildMenuTree(menuSrcFiles);
+        var result = parser.getMenu(menuMap.get('en').get('Help'));
+        expect(result).to.deep.equal('<ul><li><span>Categ page</span><ul><li><a href="Help:' +
+        'Categ-page:Item-page-2">Item page 2</a></li><li><a href="Help:Categ-page:Item-page-1"' +
+        '>Item page 1</a></li></ul></li><li><a href="Help:Landing-Some-Page">Landing Some Page</a></li></ul>');
+    });
+
+    it('Testcase - getOrderedFiles', function() {
+        var parser = new GitWikiToHTML();
+        parser.menu = menuBuilt;
+        var result = parser.getOrderedFiles([]);
+        expect(result).to.deep.equal([]);
+    });
+
+    it('Testcase - getOrderedFiles', function() {
+        var parser = new GitWikiToHTML();
+        var result = parser.getOrderedFiles([
+            'en:A:B', 'en:A:A', 'en:B', 'en:C', 'en:D', 'en:E', 'fr_ca:D', 'fr_ca:A:B'
+        ], [
+            'D', 'E', 'C'
+        ]);
+        expect(result).to.deep.equal([
+            'en:D',
+            'fr_ca:D',
+            'en:E',
+            'en:C',
+            'fr_ca:A:B',
+            'en:B',
+            'en:A:B',
+            'en:A:A'
+        ]);
     });
 });
