@@ -1,0 +1,9 @@
+{
+    "pre": [],
+    "post": [
+        {"<h([1-3])": "<h$1 class=\"ibm-h$1\""},
+        {"<table([\\s]?)": "<table class=\"ibm-data-table ibm-altcols ibm-grid\"$1"},
+        {"<img ": "<img class=\"ibm-resize\" "}
+    ],
+    "order": []
+}
