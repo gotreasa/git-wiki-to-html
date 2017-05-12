@@ -424,6 +424,7 @@ describe('Testsuite - CloudantStore', function() {
         '>Item page 1</a></li></ul></li><li><a href="Help:Landing-Some-Page">Landing Some Page</a></li></ul>');
     });
 
+
     it('Testcase - getOrderedFiles', function() {
         var parser = new GitWikiToHTML();
         parser.menu = menuBuilt;
@@ -449,4 +450,48 @@ describe('Testsuite - CloudantStore', function() {
             'en:A:A'
         ]);
     });
+
+    it('Testcase - getTranslationObject()', function() {
+        const transDirFilteredContent = {
+            en: {
+                'Help': 'Help',
+                'Landing Some Page': 'Landing Some Page'
+            },
+            fr_ca: {
+                'Help': 'Help',
+                'Landing Some Page': 'Landing Some Page'
+            }
+        };
+
+        const parser = new GitWikiToHTML();
+        const result = parser.getTranslationObject(dirFilteredContent);
+
+        expect(result).to.deep.equal(transDirFilteredContent);
+    });
+
+    it('Testcase - getTranslationObject() - default lang only (en)', function() {
+        const dirFilteredContentEn = [
+            'en:Help.md',
+            'en:Help:Landing-Some-Page.md'
+        ];
+        const transDirFilteredContentEn = {
+            en: {
+                'Help': 'Help',
+                'Landing Some Page': 'Landing Some Page'
+            }
+        };
+
+        const parser = new GitWikiToHTML();
+        const result = parser.getTranslationObject(dirFilteredContentEn);
+
+        expect(parser.defaultLanguage).equal('en');
+        expect(result).to.deep.equal(transDirFilteredContentEn);
+    });
+
+    it('Testcase - getTranslationObject() - no files', function() {
+        const parser = new GitWikiToHTML();
+        const result = parser.getTranslationObject([]);
+        expect(result).to.deep.equal({});
+    });
+
 });
