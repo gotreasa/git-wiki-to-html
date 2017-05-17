@@ -1,6 +1,6 @@
 {
   "name": "git-wiki-to-html",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Export github/git markdown based wiki repository to HTML based site with navigation",
   "main": "index.js",
   "scripts": {
