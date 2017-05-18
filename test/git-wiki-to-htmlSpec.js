@@ -494,4 +494,18 @@ describe('Testsuite - CloudantStore', function() {
         expect(result).to.deep.equal({});
     });
 
+    it('Testcase - test default rules for parsing links', function() {
+        let str = `[IBM Link](https://github.ibm.com/mySA/help/wiki/en:Help:Opportunity--%28OM%29:SC4BP:Opportunities) 
+text [GIT link](https://github.com/mySA/help/wiki/en:Help.md)`;
+        const rules = require('../data/default/rules.json');
+        const parser = new GitWikiToHTML(
+            {rules: rules}
+        );
+
+        const result = parser.parse(str);
+        const expectedStr = `<p><a href="/help/#/Help:Opportunity--(OM):SC4BP:Opportunities">IBM Link</a> 
+text <a href="/help/#/Help.md">GIT link</a></p>
+`;
+        expect(result).to.deep.equal(expectedStr);
+    });
 });
