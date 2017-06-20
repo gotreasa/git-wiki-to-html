@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * CLI tool for transforming markdown files to html from a src folder to dest
- * usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [rules-json-file] [menu-tpl-json-file]
+ * usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [custom-options-folder]
  *
  * rules/menu files defaults to ./data/default/*  - if not provided
  * new rules/menu items are merged on top of default rules
@@ -18,14 +18,13 @@ const _ = require('lodash');
 const myConsole = new Console(process.stdout, process.stderr);
 if (process.argv.length < 3 || process.argv[2] == '--help') {
     myConsole.log(
-        'usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [custom-rules-folder]'
+        'usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [options-folder]'
     );
     process.exit(0);
 }
 
 // load default rules
-let rules = require('../data/default/rules.json');
-let menuTpls = require('../data/default/menu.json');
+let defaultOptions = require('../data/default/options.json');
 
 // overrite rules/menu tpl if any folder required
 if (process.argv[4]) {
@@ -36,28 +35,20 @@ if (process.argv[4]) {
             return objValue.concat(srcValue);
         }
     };
-    myConsole.log('Merging additional rules/menu from: %s', templatesFolder);
+    myConsole.log('Merging additional rules/menu/other options from: %s', templatesFolder);
     try {
-        let additionalMenuTpls = require(path.join(templatesFolder, '/menu.json'));
-        menuTpls = _.mergeWith(menuTpls, additionalMenuTpls, concatArrays);
+        let customOptions = require(path.join(templatesFolder, '/options.json'));
+        defaultOptions = _.mergeWith(defaultOptions, customOptions, concatArrays);
     } catch (err) {
         myConsole.log('No additional menu templates present in provided templates folder', err);
     }
 
-    try {
-        let additionalRules = require(path.join(templatesFolder, '/rules.json'));
-        rules = _.mergeWith(rules, additionalRules, concatArrays);
-    } catch (err) {
-        myConsole.log('No additional rules present in provided templates folder', err);
-    }
 }
 
-const obj = new GitWikiToHTML({
-    'srcDir': process.argv[2] || null,
-    'destDir': process.argv[3] || null,
-    'rules': rules,
-    'menuTpls': menuTpls
-});
+defaultOptions.srcDir = process.argv[2] || null;
+defaultOptions.destDir = process.argv[3] || null;
+
+const obj = new GitWikiToHTML(defaultOptions);
 
 obj.transform().then(function() {
     myConsole.log('Transform DONE. %s Files generated: ', obj.resFiles.length);

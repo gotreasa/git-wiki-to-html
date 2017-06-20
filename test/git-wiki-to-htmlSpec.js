@@ -5,7 +5,7 @@ var expect = require('chai').expect,
     rewire = require('rewire'),
     GitWikiToHTML = rewire('../lib/git-wiki-to-html.js');
 
-describe('Testsuite - CloudantStore', function() {
+describe('Testsuite - GitWikiToHTML', function() {
     var fsMock = {
         statSync: function() {},
         writeFileSync: function() {}
@@ -356,9 +356,9 @@ describe('Testsuite - CloudantStore', function() {
         var result = parser.buildMenuTree(menuSrcFiles);
 
         expect(result.get('en').get('Help').get('Landing-Some-Page').get('_link'))
-            .to.equal('en:Help:Landing-Some-Page');
+            .to.equal('en%3AHelp%3ALanding-Some-Page');
         expect(result.get('en').get('Help').get('Categ-page').get('Item-page-1').get('_link'))
-            .to.equal('en:Help:Categ-page:Item-page-1');
+            .to.equal('en%3AHelp%3ACateg-page%3AItem-page-1');
     });
 
     it('Testcase - buildMenuTree - ordered', function() {
@@ -381,8 +381,9 @@ describe('Testsuite - CloudantStore', function() {
     it('Testcase - getMenuTpl - item', function() {
         var parser = new GitWikiToHTML();
         parser.menu = menuBuilt;
-        var result = parser.getMenuTpl('Item-page-1', 'en:Help:Categ-page:Item-page-1', null, null, 'item');
-        expect(result).to.deep.equal('<li><a href="Help:Categ-page:Item-page-1">Item page 1</a></li>');
+        var result = parser.getMenuTpl('Item-page-1', 'en%3AHelp%3ACateg-page%3AItem-page-1', null, null, 'item');
+        expect(result).to.deep.equal('<li><a href=".&#x2F;#&#x2F;Help%3ACateg-page%3AItem-page-1">Item page 1'
+        + '</a></li>');
     });
 
     it('Testcase - getMenuTpl - categ', function() {
@@ -401,12 +402,12 @@ describe('Testsuite - CloudantStore', function() {
         var parser = new GitWikiToHTML();
         var menuMap = parser.buildMenuTree(menuSrcFiles);
         var resultFr = parser.getMenu(menuMap.get('fr_ca').get('Help'));
-        expect(resultFr).to.deep.equal('<ul><li><span>Categ 1</span><ul><li><span>Categ 2</span>' +
-        '<ul><li><a href="fr_ca:Help:Categ-1:Categ-2:Page">Page</a></li></ul></li></ul></li></ul>');
+        expect(resultFr).to.deep.equal('<ul><li><span>Categ 1</span><ul><li><span>Categ 2</span><ul><li>'
+        + '<a href=".&#x2F;#&#x2F;Help%3ACateg-1%3ACateg-2%3APage">Page</a></li></ul></li></ul></li></ul>');
         var resultEn = parser.getMenu(menuMap.get('en').get('Help'));
-        expect(resultEn).to.deep.equal('<ul><li><a href="Help:Landing-Some-Page">Landing Some Page</a>' +
-        '</li><li><span>Categ page</span><ul><li><a href="Help:Categ-page:Item-page-2">Item page 2</a>' +
-        '</li><li><a href="Help:Categ-page:Item-page-1">Item page 1</a></li></ul></li></ul>');
+        expect(resultEn).to.deep.equal('<ul><li><a href=".&#x2F;#&#x2F;Help%3ALanding-Some-Page">Landing Some Page</a>'
+        + '</li><li><span>Categ page</span><ul><li><a href=".&#x2F;#&#x2F;Help%3ACateg-page%3AItem-page-2">Item page 2'
+        + '</a></li><li><a href=".&#x2F;#&#x2F;Help%3ACateg-page%3AItem-page-1">Item page 1</a></li></ul></li></ul>');
     });
 
     it('Testcase - getMenu ordered', function() {
@@ -419,9 +420,9 @@ describe('Testsuite - CloudantStore', function() {
         });
         var menuMap = parser.buildMenuTree(menuSrcFiles);
         var result = parser.getMenu(menuMap.get('en').get('Help'));
-        expect(result).to.deep.equal('<ul><li><span>Categ page</span><ul><li><a href="Help:' +
-        'Categ-page:Item-page-2">Item page 2</a></li><li><a href="Help:Categ-page:Item-page-1"' +
-        '>Item page 1</a></li></ul></li><li><a href="Help:Landing-Some-Page">Landing Some Page</a></li></ul>');
+        expect(result).to.deep.equal('<ul><li><span>Categ page</span><ul><li><a href=".&#x2F;#&#x2F;Help%3ACateg-page'
+        + '%3AItem-page-2">Item page 2</a></li><li><a href=".&#x2F;#&#x2F;Help%3ACateg-page%3AItem-page-1">Item page 1'
+        + '</a></li></ul></li><li><a href=".&#x2F;#&#x2F;Help%3ALanding-Some-Page">Landing Some Page</a></li></ul>');
     });
 
 
@@ -495,16 +496,37 @@ describe('Testsuite - CloudantStore', function() {
     });
 
     it('Testcase - test default rules for parsing links', function() {
-        let str = `[IBM Link](https://github.ibm.com/mySA/help/wiki/en:Help:Opportunity--%28OM%29:SC4BP:Opportunities) 
-text [GIT link](https://github.com/mySA/help/wiki/en:Help.md)`;
-        const rules = require('../data/default/rules.json');
+        let str = `[IBM Link](https://github.ibm.com/mySA/help/wiki/Opportunity--%28OM%29-#-SC4BP-#-Opportunities) 
+text [GIT link](https://github.com/mySA/help/wiki/en-#-Help) and
+ [GIT FR link](https://github.com/mySA/help/wiki/fr_CA-#-Help-#-Some-Page)`;
+        const options = require('../data/default/options.json');
+        // options.multilang = true;
         const parser = new GitWikiToHTML(
-            {rules: rules}
+            options
         );
 
         const result = parser.parse(str);
-        const expectedStr = `<p><a href="/help/#/Help:Opportunity--(OM):SC4BP:Opportunities">IBM Link</a> 
-text <a href="/help/#/Help.md">GIT link</a></p>
+        const expectedStr = `<p><a href="./Opportunity--(OM)-#-SC4BP-#-Opportunities.html">IBM Link</a> 
+text <a href="./Help.html">GIT link</a> and
+ <a href="./Help-#-Some-Page.html">GIT FR link</a></p>
+`;
+        expect(result).to.deep.equal(expectedStr);
+    });
+
+    it('Testcase - test deprecated colon rules for parsing links', function() {
+        let str = `[IBM Link](https://github.ibm.com/mySA/help/wiki/Opportunity--%28OM%29:SC4BP:Opportunities) 
+text [GIT link](https://github.com/mySA/help/wiki/en:Help) and
+ [GIT FR link](https://github.com/mySA/help/wiki/fr_CA:Help:Some-Page)`;
+        const options = require('../data/northstar-angular/options.json');
+        // options.multilang = true;
+        const parser = new GitWikiToHTML(
+            options
+        );
+
+        const result = parser.parse(str);
+        const expectedStr = `<p><a href="./#/Opportunity--(OM):SC4BP:Opportunities">IBM Link</a> 
+text <a href="./#/Help">GIT link</a> and
+ <a href="./#/Help:Some-Page">GIT FR link</a></p>
 `;
         expect(result).to.deep.equal(expectedStr);
     });
