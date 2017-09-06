@@ -10,49 +10,119 @@
  *
  */
 'use strict';
+const debug = require('debug')('git-wiki-to-html-bin');
+const fs = require('fs');
 const path = require('path');
 const GitWikiToHTML = require('../');
 const Console = require('console').Console;
 const _ = require('lodash');
+const argv = require('minimist')(process.argv.slice(2));
 
 const myConsole = new Console(process.stdout, process.stderr);
-if (process.argv.length < 3 || process.argv[2] == '--help') {
-    myConsole.log(
-        'usage: node ./git-wiki-to-html.js [srcFolder] [dstFolder] [options-folder]'
-    );
+
+
+if (Object.keys(argv).length === 1 || argv['help']) {
+    myConsole.log(`
+NAME
+
+    git-wiki-to-html -- Parse markdown .md files from src folder and transform them to html files in target folder
+
+SYNOPSIS
+
+    git-wiki-to-html [--src=srcFolder] [--dest=destFolder] [--template=template] [--options=optionsfile]
+
+DESCRIPTION
+
+    Parse markdown .md files from src folder and based on the options transform them to html files in target folder.
+    At same time it generates menu html file with the hierarchy of items based on the file names
+
+    The following options are available:
+
+    --src          Sets the source directory for parsing markdown files (defaults to working directory)
+
+    --dest         Sets the target directory for transformed html files (defaults to working directory)
+
+    --template     Uses one of pre-defined options templates (markdown, northstar-angular). 
+                   "markdown" template generates only the menu in __Sidebar.md file for github wiki side menu
+
+    --options      Allow to set an local .json file as the options file (applied on top of default and template options)
+                   If not set it seeks for a options.json file in working directory
+`);
     process.exit(0);
 }
 
-// load default rules
-let defaultOptions = require('../data/default/options.json');
+// set folders
+let baseDir = __dirname;
+let dataDir = path.join(baseDir, '../data');
+let workDir = process.cwd();
 
-// overrite rules/menu tpl if any folder required
-if (process.argv[4]) {
-    let templatesFolder = path.isAbsolute(process.argv[4]) ? process.argv[4] :
-        path.join(process.cwd(), process.argv[4]);
-    let concatArrays = function(objValue, srcValue) {
-        if (_.isArray(objValue)) {
-            return objValue.concat(srcValue);
-        }
-    };
-    myConsole.log('Merging additional rules/menu/other options from: %s', templatesFolder);
-    try {
-        let customOptions = require(path.join(templatesFolder, '/options.json'));
-        defaultOptions = _.mergeWith(defaultOptions, customOptions, concatArrays);
-    } catch (err) {
-        myConsole.log('No additional menu templates present in provided templates folder', err);
+debug('baseDir: %s', baseDir);
+debug('dataDir: %s', dataDir);
+debug('workDir: %s', workDir);
+
+let concatArrays = (objValue, srcValue) => {
+    if (_.isArray(objValue)) {
+        return objValue.concat(srcValue);
     }
+};
 
+let getPath = (targetPath) => {
+    return path.isAbsolute(targetPath) ? targetPath : path.join(workDir, targetPath);
+};
+
+// set src & det folders
+let srcDir = argv['src'] ? getPath(argv['src']) : null;
+let destDir = argv['dest'] ? getPath(argv['dest']) : null;
+
+if (srcDir && (!fs.existsSync(srcDir) || !fs.lstatSync(srcDir).isDirectory())) {
+    myConsole.log('Parameter --src should be a directory', srcDir);
+    process.exit(1);
 }
 
-defaultOptions.srcDir = process.argv[2] || null;
-defaultOptions.destDir = process.argv[3] || null;
+if (destDir && (!fs.existsSync(destDir) || !fs.lstatSync(destDir).isDirectory())) {
+    myConsole.log('Parameter --dest should be a directory', destDir);
+    process.exit(1);
+}
+
+// look for options first in template
+let template = argv['template'] || null;
+let optionsFile = argv['options'] ?  getPath(argv['options']) : getPath('options.json');
+let templateFile = template ? path.join(dataDir, template, 'options.json') : null;
+// load default rules
+let defaultOptions = require(path.join(dataDir, 'default', 'options.json'));
+defaultOptions.srcDir = srcDir || workDir;
+defaultOptions.destDir = destDir || workDir;
+
+if (template) {
+    if (fs.existsSync(templateFile) && fs.lstatSync(templateFile).isFile()) {
+        debug('Using package options template: %s', template);
+        let templateOptions = require(templateFile);
+        defaultOptions = _.mergeWith(defaultOptions, templateOptions, concatArrays);
+    } else {
+        debug('Template parameter not matching any directory: %s', templateFile);
+    }
+}
+
+// check for custom options.json file
+if (optionsFile) {
+    if (fs.existsSync(optionsFile) && fs.lstatSync(optionsFile).isFile()) {
+        debug('Using custom options file template: %s', optionsFile);
+        let customOptions = require(optionsFile);
+        defaultOptions = _.mergeWith(defaultOptions, customOptions, concatArrays);
+    } else {
+        debug('Options file parameter not matching any file: %s', optionsFile);
+    }
+}
+
+debug('srcDir: %s', srcDir);
+debug('destDir: %s', destDir);
 
 const obj = new GitWikiToHTML(defaultOptions);
 
-obj.transform().then(function() {
+try {
+    obj.transform();
     myConsole.log('Transform DONE. %s Files generated: ', obj.resFiles.length);
-}).catch((err) => {
+} catch (err) {
     myConsole.log('Error: ', err);
     process.exit(1);
-});
+}
