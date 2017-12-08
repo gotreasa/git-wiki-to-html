@@ -9,7 +9,7 @@
             "Home.md"
         ]
     },
-    "separator": "-#-",
+    "separator": ":-",
     "prefixFiles": null,
     "linkTemplate": "./%s",
     "menuFile": "_Sidebar.md",
