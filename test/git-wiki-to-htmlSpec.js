@@ -580,5 +580,13 @@ describe('Testsuite GitWikiToHTML', () => {
             expect(writeFileSyncStub.callCount).to.equal(1);
             expect(getMenuStub.calledWith(parser.menu)).to.be.true;
         });
+
+        it('Testcase - getMenuTpl - item special chars', () => {
+            let parser = new GitWikiToHTML();
+            parser.menu = null;
+            let result = parser.getMenuTpl('Item-page-1?', 'Item-page-1?', null, null, 'item');
+            expect(result).to.deep.equal('<li><a href=".&#x2F;#&#x2F;Item-page-1%3F">Item page 1?'
+            + '</a></li>');
+        });
     });
 });
