@@ -99,6 +99,7 @@ Use _--option=/path/to/my/options.json_ to override the parsing rules with custo
 * menu - replace rules for generating the menu file
 * rules (pre/post) - Regex rules to be applied before and after HTML transformation
 * rules.order - Specify a custom order (default lexical) to the menu items
+* rules.exclude - Specify a a list of items to be excluded (a category will match all subcategories)
 * separator - provide a different separator
 * prefixFiles - option to select only files starting with a prefix
 * linkTemplate - define your local link template

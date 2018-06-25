@@ -164,6 +164,21 @@ describe('Testsuite GitWikiToHTML', () => {
             expect(res).to.deep.equal(dirFilteredContent);
         });
 
+        it('Testcase - loadFiles - exclude list', () => {
+
+            readdirSyncStub.returns(menuSrcFiles);
+            let parser = new GitWikiToHTML({rules: {exclude: [
+                'Help:Categ-page.md',
+                'Help:Landing-Some-Page.md'
+            ]}});
+            let res = parser.loadFiles();
+            expect(res).to.deep.equal([
+                'en:Help.md',
+                'fr_ca:Help.md',
+                'fr_ca:Help:Categ-1:Categ-2:Page.md',
+            ]);
+        });
+
         it('Testcase - loadFiles - read failure', () => {
             readdirSyncStub.throws(new Error('read fail'));
             let parser = new GitWikiToHTML();
@@ -508,6 +523,29 @@ describe('Testsuite GitWikiToHTML', () => {
     });
 
     describe('Singlelanguage', () => {
+        it('Testcase - loadFiles - exclude list', () => {
+
+            readdirSyncStub.returns([
+                'Page-1.md',
+                'Some-Categ.md',
+                'Some-Categ:Subcateg-1.md',
+                'Some-Categ-Differet.md'
+            ]);
+            let parser = new GitWikiToHTML({
+                multilang: false,
+                rules: {
+                    exclude: [
+                        'Some-Categ.md'
+                    ]
+                }
+            });
+            let res = parser.loadFiles();
+            expect(res).to.deep.equal([
+                'Page-1.md',
+                'Some-Categ-Differet.md'
+            ]);
+        });
+
         it('Testcase - getOrderedFiles', () => {
             let parser = new GitWikiToHTML({
                 multilang: false
